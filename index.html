@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SNAKE MASTER PRO</title>
+    <style>
+        :root { --theme-color: #39ff14; --bg-ui: rgba(0, 0, 0, 0.9); }
+        body { 
+            margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+            font-family: 'Segoe UI', sans-serif; transition: 0.5s;
+            background-size: cover !important; background-position: center !important;
+            overflow: hidden; touch-action: none;
+        }
+
+        .user-bar {
+            position: fixed; top: 20px; right: 20px; background: rgba(0, 0, 0, 0.9);
+            padding: 10px 20px; border-radius: 50px; border: 2px solid var(--theme-color); 
+            display: flex; align-items: center; gap: 15px; color: white; z-index: 1000;
+        }
+        .user-bar b { color: var(--theme-color); }
+        .exit-btn { background: #ff4444; border: none; color: white; padding: 5px 12px; border-radius: 20px; cursor: pointer; font-size: 10px; font-weight: bold; }
+
+        body.theme-city { background: url('https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?q=80&w=2000'); --theme-color: #00d4ff; }
+        body.theme-horror { background: url('image_7885eb.jpg'); --theme-color: #a349a4; }
+        body.theme-sea { background: url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=2000'); --theme-color: #29b6f6; }
+        body.theme-brainrot { background: url('image_7885a8.jpg'); --theme-color: #c0ff00; }
+        body.theme-sakura { background: url('https://images.unsplash.com/photo-1522383225653-ed111181a951?q=80&w=2000'); --theme-color: #ff80ab; }
+        body.theme-cyber { background: url('https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=2000'); --theme-color: #39ff14; }
+
+        #wrapper { background: var(--bg-ui); padding: 25px; border-radius: 20px; border: 4px solid var(--theme-color); text-align: center; width: 450px; box-shadow: 0 0 40px rgba(0,0,0,0.8); color: white; }
+        h1 { color: var(--theme-color); text-transform: uppercase; letter-spacing: 4px; }
+        select { padding: 12px; margin: 10px 0; width: 85%; border-radius: 8px; border: 2px solid var(--theme-color); background: #000; color: white; text-align: center; }
+        button { background: var(--theme-color) !important; color: #000 !important; padding: 15px 25px; border: none; border-radius: 8px; font-weight: 900; cursor: pointer; text-transform: uppercase; margin: 10px; }
+
+        #pauseBtn { background: transparent !important; color: var(--theme-color) !important; border: 2px solid var(--theme-color) !important; padding: 8px 20px; font-size: 12px; }
+        #pauseBtn.active { background: var(--theme-color) !important; color: #000 !important; }
+
+        #touch-ui { display: none; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 180px; margin: 15px auto; }
+        .t-btn { width: 55px; height: 55px; background: rgba(255,255,255,0.1); border: 2px solid var(--theme-color); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 24px; color: var(--theme-color); }
+
+        canvas { background: #000; border: 2px solid var(--theme-color); display: block; margin: 20px auto; }
+        table { width: 100%; color: white; border-collapse: collapse; }
+        th { color: var(--theme-color); border-bottom: 2px solid var(--theme-color); padding: 10px; }
+        td { padding: 8px; border-bottom: 1px solid #333; }
+    </style>
+</head>
+<body class="theme-city">
+
+    <div class="user-bar">
+        <span> <b id="topNavUser">Invité</b></span>
+        <button class="exit-btn" onclick="location.href='https://joxiagame.github.io/Joxia-Games/'">QUITTER</button>
+    </div>
+
+    <div id="wrapper">
+        <div id="menu">
+            <h1 id="title">SNAKE VILLE</h1>
+            <select id="themeSelect">
+                <option value="city">🏙️ VILLE</option>
+                <option value="horror">🎃 MANOIR</option>
+                <option value="sea">🌊 PLAGE</option>
+                <option value="sakura">🌸 SAKURA</option>
+                <option value="brainrot">🤪 BRAINROT</option>
+                <option value="cyber">⚡ CYBER</option>
+            </select>
+            <br>
+            <div style="margin: 10px;">
+                <label>Tactile : </label>
+                <button id="touchToggle">OFF</button>
+            </div>
+            <button id="startBtn">DÉMARRER</button>
+            <button id="leaderBtn">CLASSEMENT</button>
+        </div>
+
+        <div id="game" style="display:none;">
+            <div style="display:flex; justify-content: space-between; align-items: center; font-weight:bold; color:var(--theme-color); margin-bottom: 5px;">
+                <span id="pDisplay"></span>
+                <button id="pauseBtn">PAUSE</button>
+                <span>SCORE: <b id="scoreVal" style="color:white">0</b></span>
+            </div>
+            <canvas id="snakeGame" width="400" height="400"></canvas>
+            <div id="touch-ui">
+                <div></div><div class="t-btn" id="btnUP">▲</div><div></div>
+                <div class="t-btn" id="btnLEFT">◀</div><div class="t-btn" id="btnDOWN">▼</div><div class="t-btn" id="btnRIGHT">▶</div>
+            </div>
+        </div>
+
+        <div id="leaderboard" style="display:none;">
+            <h1>TOP 10</h1>
+            <table><thead><tr><th>JOUEUR</th><th>SCORE</th></tr></thead><tbody id="lBody"></tbody></table>
+            <br><button id="backBtn">RETOUR</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, push, onValue, query, orderByChild, limitToLast, get, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const user = urlParams.get('player') || "Invité";
+        document.getElementById('topNavUser').innerText = user;
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAMsHTUhHFNjXZO9dp7k_LWsjPKK-8s3ps",
+            authDomain: "joxiahub-2928b.firebaseapp.com",
+            projectId: "joxiahub-2928b",
+            storageBucket: "joxiahub-2928b.appspot.com",
+            messagingSenderId: "1078726336822",
+            appId: "1:1078726336822:web:f425c178ca58ff63e99397",
+            databaseURL: "https://joxiahub-2928b-default-rtdb.europe-west1.firebasedatabase.app/"
+        };
+        const app = initializeApp(firebaseConfig); const db = getDatabase(app);
+        const DB_PATH = 'games/Snake/scores';
+
+        const canvas = document.getElementById("snakeGame"); const ctx = canvas.getContext("2d");
+        const box = 20; let snake, food, d, score, gameLoop, th;
+        let isTouchEnabled = false, isPaused = false, isCountingDown = false, countdownValue = 3, canChangeDir = true;
+
+        function getThemeBaseColor(theme) {
+            const colors = {
+                city: "#00d4ff", horror: "#a349a4", sea: "#29b6f6",
+                sakura: "#ff80ab", brainrot: "#c0ff00", cyber: "#39ff14"
+            };
+            return colors[theme] || "#39ff14";
+        }
+
+        function drawSnake(snake, theme) {
+            const baseColor = getThemeBaseColor(theme);
+            snake.forEach((s, index) => {
+                const isHead = index === 0;
+                if (theme === 'brainrot') {
+                    ctx.fillStyle = `hsl(${ (index * 40) % 360 }, 80%, 60%)`;
+                } else {
+                    ctx.fillStyle = baseColor;
+                }
+                const sSize = box * 0.85;
+                const offset = (box - sSize) / 2;
+                if (isHead) {
+                    ctx.beginPath();
+                    ctx.roundRect(s.x + offset/2, s.y + offset/2, box * 0.9, box * 0.9, 5);
+                    ctx.fill();
+                    ctx.fillStyle = "white";
+                    const eyeSpacing = 4;
+                    ctx.beginPath();
+                    ctx.arc(s.x + box/2 + (d === "UP" || d === "DOWN" ? -eyeSpacing : 4), s.y + box/2 + (d === "LEFT" || d === "RIGHT" ? -eyeSpacing : 4), 3, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.arc(s.x + box/2 + (d === "UP" || d === "DOWN" ? eyeSpacing : 4), s.y + box/2 + (d === "LEFT" || d === "RIGHT" ? eyeSpacing : 4), 3, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.strokeStyle = "#ff4444";
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    if(d === "RIGHT") { ctx.moveTo(s.x+box, s.y+box/2); ctx.lineTo(s.x+box+5, s.y+box/2); }
+                    else if(d === "LEFT") { ctx.moveTo(s.x, s.y+box/2); ctx.lineTo(s.x-5, s.y+box/2); }
+                    else if(d === "UP") { ctx.moveTo(s.x+box/2, s.y); ctx.lineTo(s.x+box/2, s.y-5); }
+                    else if(d === "DOWN") { ctx.moveTo(s.x+box/2, s.y+box); ctx.lineTo(s.x+box/2, s.y+box+5); }
+                    ctx.stroke();
+                } else {
+                    if (theme !== 'brainrot') ctx.globalAlpha = 1 - (index / snake.length * 0.4);
+                    ctx.beginPath();
+                    ctx.roundRect(s.x + offset, s.y + offset, sSize, sSize, 4);
+                    ctx.fill();
+                    ctx.globalAlpha = 1;
+                }
+            });
+        }
+
+        function drawFood(food, theme) {
+            const icon = foodIcons[theme];
+            const centerX = food.x + box / 2;
+            const centerY = food.y + box / 2;
+            ctx.fillStyle = "rgba(255,255,255,0.6)";
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = "white";
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, box/1.8, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.font = `${box - 2}px Arial`;
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(icon, centerX, centerY + 1);
+        }
+
+        const foodIcons = { city: "🏙️", horror: "🕯️", sea: "🌴", sakura: "🌸", brainrot: "🍎", cyber: "🍏" };
+
+        function updateUI() {
+            const v = document.getElementById("themeSelect").value;
+            document.body.className = "theme-" + v;
+            const names = { city: 'VILLE', horror: 'MANOIR', sea: 'PLAGE', sakura: 'SAKURA', brainrot: 'BRAINROT', cyber: 'CYBER' };
+            document.getElementById("title").innerText = "SNAKE " + names[v];
+        }
+        document.getElementById("themeSelect").addEventListener('change', updateUI);
+
+        function toggleTouch() {
+            isTouchEnabled = !isTouchEnabled;
+            const btn = document.getElementById("touchToggle");
+            btn.innerText = isTouchEnabled ? "ON" : "OFF";
+            btn.style.background = isTouchEnabled ? "#39ff14" : "#ff4444";
+        }
+        document.getElementById("touchToggle").onclick = toggleTouch;
+
+        function setDir(newD) {
+            if(isPaused || isCountingDown || !canChangeDir) return;
+            if(newD === "LEFT" && d !== "RIGHT") { d = "LEFT"; canChangeDir = false; }
+            if(newD === "UP" && d !== "DOWN") { d = "UP"; canChangeDir = false; }
+            if(newD === "RIGHT" && d !== "LEFT") { d = "RIGHT"; canChangeDir = false; }
+            if(newD === "DOWN" && d !== "UP") { d = "DOWN"; canChangeDir = false; }
+        }
+
+        document.getElementById("btnUP").onclick = () => setDir("UP");
+        document.getElementById("btnDOWN").onclick = () => setDir("DOWN");
+        document.getElementById("btnLEFT").onclick = () => setDir("LEFT");
+        document.getElementById("btnRIGHT").onclick = () => setDir("RIGHT");
+
+        function togglePause() {
+            if(isCountingDown) return;
+            if(!isPaused) { isPaused = true; document.getElementById("pauseBtn").innerText = "REPRENDRE"; document.getElementById("pauseBtn").classList.add('active'); }
+            else startCountdown();
+        }
+        document.getElementById("pauseBtn").onclick = togglePause;
+
+        function startCountdown() {
+            isPaused = false; isCountingDown = true; countdownValue = 3;
+            document.getElementById("pauseBtn").innerText = "PRÊT ?";
+            let timer = setInterval(() => {
+                countdownValue--;
+                if(countdownValue <= 0) { clearInterval(timer); isCountingDown = false; document.getElementById("pauseBtn").innerText = "PAUSE"; document.getElementById("pauseBtn").classList.remove('active'); }
+            }, 1000);
+        }
+
+        function checkAndStart() {
+            th = document.getElementById("themeSelect").value;
+            document.getElementById("menu").style.display="none"; 
+            document.getElementById("game").style.display="block";
+            document.getElementById("pDisplay").innerText = user;
+            if(isTouchEnabled) document.getElementById("touch-ui").style.display = "grid";
+            start();
+        }
+        document.getElementById("startBtn").onclick = checkAndStart;
+
+        function start() {
+            snake = [{x: 10*box, y: 10*box}, {x: 9*box, y: 10*box}]; 
+            score = 0; d = "RIGHT"; isPaused = false; isCountingDown = false; canChangeDir = true;
+            document.getElementById("scoreVal").innerText = "0";
+            food = { x: Math.floor(Math.random()*20)*box, y: Math.floor(Math.random()*20)*box };
+            if(gameLoop) clearInterval(gameLoop);
+            gameLoop = setInterval(draw, 100);
+        }
+
+        function draw() {
+            // Fond Damier
+            for(let r=0; r<20; r++){
+                for(let c=0; c<20; c++){
+                    ctx.fillStyle = (r + c) % 2 === 0 ? "#111" : "#0a0a0a";
+                    ctx.fillRect(c * box, r * box, box, box);
+                }
+            }
+
+            drawSnake(snake, th);
+            drawFood(food, th);
+
+            if(isPaused || isCountingDown) {
+                ctx.fillStyle = "rgba(0,0,0,0.7)"; ctx.fillRect(0,0,400,400);
+                ctx.fillStyle = "white"; ctx.font = isPaused ? "40px Impact" : "80px Impact";
+                ctx.textAlign = "center";
+                ctx.fillText(isPaused ? "PAUSE" : countdownValue, 200, 220);
+                return;
+            }
+
+            canChangeDir = true;
+            let sX = snake[0].x, sY = snake[0].y;
+            if(d==="LEFT") sX -= box; if(d==="UP") sY -= box; if(d==="RIGHT") sX += box; if(d==="DOWN") sY += box;
+            
+            // --- GESTION DES COLLISIONS CORRIGÉE ---
+            // On vérifie le Game Over seulement si le serpent a une direction
+            if (d) {
+                // Si la nouvelle position sort du cadre ou touche le corps
+                if (sX < 0 || sX >= 400 || sY < 0 || sY >= 400 || snake.some(s => s.x === sX && s.y === sY)) {
+                    clearInterval(gameLoop);
+                    saveScore(user, score).then(() => { alert("GAME OVER ! Score: " + score); backToMenu(); });
+                    return;
+                }
+
+                // Si mange la nourriture
+                if(sX === food.x && sY === food.y) {
+                    score++; document.getElementById("scoreVal").innerText = score;
+                    food = { x: Math.floor(Math.random()*20)*box, y: Math.floor(Math.random()*20)*box };
+                } else {
+                    snake.pop(); // Retire la queue si on ne mange pas
+                }
+                snake.unshift({x:sX, y:sY}); // Ajoute la nouvelle tête
+            }
+        }
+
+        async function saveScore(name, newScore) {
+            if(name === "Invité") return; 
+            const snap = await get(ref(db, DB_PATH));
+            let key = null, oldS = 0;
+            if (snap.exists()) {
+                const data = snap.val();
+                for (let k in data) { 
+                    if (data[k].name.toLowerCase() === name.toLowerCase()) { 
+                        key = k; oldS = data[k].score; break; 
+                    } 
+                }
+            }
+            if (!key) push(ref(db, DB_PATH), { name: name, score: newScore });
+            else if (newScore > oldS) set(ref(db, `${DB_PATH}/${key}`), { name: name, score: newScore });
+        }
+
+        function backToMenu() { 
+            document.getElementById("leaderboard").style.display = "none"; 
+            document.getElementById("game").style.display = "none"; 
+            document.getElementById("menu").style.display = "block"; 
+        }
+        document.getElementById("backBtn").onclick = backToMenu;
+
+        document.getElementById("leaderBtn").onclick = () => {
+            document.getElementById("menu").style.display = "none";
+            document.getElementById("leaderboard").style.display = "block";
+            onValue(query(ref(db, DB_PATH), orderByChild('score'), limitToLast(10)), (s) => {
+                const val = s.val();
+                const list = val ? Object.values(val).sort((a,b) => b.score - a.score) : [];
+                document.getElementById("lBody").innerHTML = list.map(e => `<tr><td>${e.name}</td><td>${e.score}</td></tr>`).join('');
+            });
+        };
+
+        document.addEventListener("keydown", e => {
+            if(e.key.includes("Arrow")) setDir(e.key.replace("Arrow","").toUpperCase());
+            if(e.code === "Space") togglePause();
+        });
+    </script>
+</body>
+</html>
