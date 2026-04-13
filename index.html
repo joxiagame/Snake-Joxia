@@ -115,6 +115,7 @@
         const canvas = document.getElementById("snakeGame"); const ctx = canvas.getContext("2d");
         const box = 20; let snake, food, d, score, gameLoop, th;
         let isTouchEnabled = false, isPaused = false, isCountingDown = false, countdownValue = 3, canChangeDir = true;
+        let isInMenu = true;
 
         function getThemeBaseColor(theme) {
             const colors = {
@@ -136,25 +137,61 @@
                 const sSize = box * 0.85;
                 const offset = (box - sSize) / 2;
                 if (isHead) {
+                    // Tête
                     ctx.beginPath();
                     ctx.roundRect(s.x + offset/2, s.y + offset/2, box * 0.9, box * 0.9, 5);
                     ctx.fill();
-                    ctx.fillStyle = "white";
-                    const eyeSpacing = 4;
+
+                    // Yeux Réalistes
+                    const eyeY = s.y + box/2 + (d === "LEFT" || d === "RIGHT" ? -4 : 4);
+                    const eyeX1 = s.x + box/2 + (d === "UP" || d === "DOWN" ? -4 : 4);
+                    const eyeX2 = s.x + box/2 + (d === "UP" || d === "DOWN" ? 4 : 4);
+
+                    const drawEye = (x, y) => {
+                        ctx.fillStyle = "white";
+                        ctx.beginPath(); ctx.arc(x, y, 3.5, 0, Math.PI * 2); ctx.fill();
+                        ctx.fillStyle = "black";
+                        ctx.beginPath(); ctx.arc(x, y, 1.8, 0, Math.PI * 2); ctx.fill();
+                        ctx.fillStyle = "white";
+                        ctx.beginPath(); ctx.arc(x - 0.8, y - 0.8, 0.6, 0, Math.PI * 2); ctx.fill();
+                    };
+
+                    drawEye(eyeX1, eyeY);
+                    drawEye(eyeX2, eyeY);
+
+                    // Bouche Réaliste en Blanc (Ligne arquée avec crocs discrets et ombre)
+                    ctx.save();
+                    ctx.translate(s.x + box/2, s.y + box/2);
+                    
+                    if(d === "RIGHT") ctx.rotate(0);
+                    else if(d === "LEFT") ctx.rotate(Math.PI);
+                    else if(d === "UP") ctx.rotate(-Math.PI/2);
+                    else if(d === "DOWN") ctx.rotate(Math.PI/2);
+
+                    // Ombre portée grise subtile pour le volume
+                    ctx.strokeStyle = "rgba(100,100,100,0.4)";
+                    ctx.lineWidth = 1.5;
                     ctx.beginPath();
-                    ctx.arc(s.x + box/2 + (d === "UP" || d === "DOWN" ? -eyeSpacing : 4), s.y + box/2 + (d === "LEFT" || d === "RIGHT" ? -eyeSpacing : 4), 3, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.beginPath();
-                    ctx.arc(s.x + box/2 + (d === "UP" || d === "DOWN" ? eyeSpacing : 4), s.y + box/2 + (d === "LEFT" || d === "RIGHT" ? eyeSpacing : 4), 3, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.strokeStyle = "#ff4444";
-                    ctx.lineWidth = 2;
-                    ctx.beginPath();
-                    if(d === "RIGHT") { ctx.moveTo(s.x+box, s.y+box/2); ctx.lineTo(s.x+box+5, s.y+box/2); }
-                    else if(d === "LEFT") { ctx.moveTo(s.x, s.y+box/2); ctx.lineTo(s.x-5, s.y+box/2); }
-                    else if(d === "UP") { ctx.moveTo(s.x+box/2, s.y); ctx.lineTo(s.x+box/2, s.y-5); }
-                    else if(d === "DOWN") { ctx.moveTo(s.x+box/2, s.y+box); ctx.lineTo(s.x+box/2, s.y+box+5); }
+                    ctx.arc(box/2 - 4, 1, 4, -Math.PI/2, Math.PI/2);
                     ctx.stroke();
+
+                    // Ligne arquée principale blanche
+                    ctx.strokeStyle = "white";
+                    ctx.lineWidth = 1.5;
+                    ctx.beginPath();
+                    ctx.arc(box/2 - 4, 0, 4, -Math.PI/2, Math.PI/2);
+                    ctx.stroke();
+
+                    // Petits Crocs Blancs Pointus
+                    ctx.fillStyle = "white";
+                    ctx.beginPath();
+                    // Croc supérieur
+                    ctx.moveTo(box/2 - 2, -2.5); ctx.lineTo(box/2 + 1, -1); ctx.lineTo(box/2 - 2, 0.5); ctx.fill();
+                    // Croc inférieur
+                    ctx.moveTo(box/2 - 2, 0.5); ctx.lineTo(box/2 + 1, 2); ctx.lineTo(box/2 - 2, 3.5); ctx.fill();
+
+                    ctx.restore();
+
                 } else {
                     if (theme !== 'brainrot') ctx.globalAlpha = 1 - (index / snake.length * 0.4);
                     ctx.beginPath();
@@ -230,6 +267,7 @@
         }
 
         function checkAndStart() {
+            isInMenu = false;
             th = document.getElementById("themeSelect").value;
             document.getElementById("menu").style.display="none"; 
             document.getElementById("game").style.display="block";
@@ -249,7 +287,6 @@
         }
 
         function draw() {
-            // Fond Damier
             for(let r=0; r<20; r++){
                 for(let c=0; c<20; c++){
                     ctx.fillStyle = (r + c) % 2 === 0 ? "#111" : "#0a0a0a";
@@ -272,24 +309,20 @@
             let sX = snake[0].x, sY = snake[0].y;
             if(d==="LEFT") sX -= box; if(d==="UP") sY -= box; if(d==="RIGHT") sX += box; if(d==="DOWN") sY += box;
             
-            // --- GESTION DES COLLISIONS CORRIGÉE ---
-            // On vérifie le Game Over seulement si le serpent a une direction
             if (d) {
-                // Si la nouvelle position sort du cadre ou touche le corps
+                // CORRECTION DÉFINITIVE BORDURES : sX strict 0-400
                 if (sX < 0 || sX >= 400 || sY < 0 || sY >= 400 || snake.some(s => s.x === sX && s.y === sY)) {
                     clearInterval(gameLoop);
                     saveScore(user, score).then(() => { alert("GAME OVER ! Score: " + score); backToMenu(); });
                     return;
                 }
-
-                // Si mange la nourriture
                 if(sX === food.x && sY === food.y) {
                     score++; document.getElementById("scoreVal").innerText = score;
                     food = { x: Math.floor(Math.random()*20)*box, y: Math.floor(Math.random()*20)*box };
                 } else {
-                    snake.pop(); // Retire la queue si on ne mange pas
+                    snake.pop();
                 }
-                snake.unshift({x:sX, y:sY}); // Ajoute la nouvelle tête
+                snake.unshift({x:sX, y:sY});
             }
         }
 
@@ -310,6 +343,7 @@
         }
 
         function backToMenu() { 
+            isInMenu = true;
             document.getElementById("leaderboard").style.display = "none"; 
             document.getElementById("game").style.display = "none"; 
             document.getElementById("menu").style.display = "block"; 
@@ -317,6 +351,7 @@
         document.getElementById("backBtn").onclick = backToMenu;
 
         document.getElementById("leaderBtn").onclick = () => {
+            isInMenu = false;
             document.getElementById("menu").style.display = "none";
             document.getElementById("leaderboard").style.display = "block";
             onValue(query(ref(db, DB_PATH), orderByChild('score'), limitToLast(10)), (s) => {
@@ -327,8 +362,11 @@
         };
 
         document.addEventListener("keydown", e => {
+            if (e.code === "Space") {
+                if (isInMenu) checkAndStart();
+                else togglePause();
+            }
             if(e.key.includes("Arrow")) setDir(e.key.replace("Arrow","").toUpperCase());
-            if(e.code === "Space") togglePause();
         });
     </script>
 </body>
