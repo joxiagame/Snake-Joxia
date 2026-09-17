@@ -40,6 +40,19 @@
         .t-btn { width: 55px; height: 55px; background: rgba(255,255,255,0.1); border: 2px solid var(--theme-color); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 24px; color: var(--theme-color); }
 
         canvas { background: #000; border: 2px solid var(--theme-color); display: block; margin: 20px auto; }
+
+        /* --- Écran Game Over --- */
+        #gameover { animation: goIn 0.35s ease-out; }
+        @keyframes goIn { from { opacity: 0; transform: scale(0.85); } to { opacity: 1; transform: scale(1); } }
+        .go-title { color: #ff4444 !important; text-shadow: 0 0 18px rgba(255,68,68,0.7); font-size: 40px; margin-bottom: 10px; }
+        .go-stats { margin: 20px 0; }
+        .go-line { color: #aaa; letter-spacing: 3px; font-size: 13px; }
+        .go-score { color: var(--theme-color); font-size: 60px; font-weight: 900; text-shadow: 0 0 20px var(--theme-color); line-height: 1.1; }
+        .go-best { color: #fff; margin-top: 10px; font-size: 15px; }
+        .go-best b { color: var(--theme-color); }
+        .go-new { color: #ffd700; font-weight: 900; margin-top: 12px; letter-spacing: 1px; animation: blink 0.8s ease-in-out infinite alternate; }
+        @keyframes blink { from { opacity: 0.4; } to { opacity: 1; } }
+
         table { width: 100%; color: white; border-collapse: collapse; }
         th { color: var(--theme-color); border-bottom: 2px solid var(--theme-color); padding: 10px; }
         td { padding: 8px; border-bottom: 1px solid #333; }
@@ -90,6 +103,18 @@
             <table><thead><tr><th>JOUEUR</th><th>SCORE</th></tr></thead><tbody id="lBody"></tbody></table>
             <br><button id="backBtn">RETOUR</button>
         </div>
+
+        <div id="gameover" style="display:none;">
+            <h1 class="go-title">GAME OVER</h1>
+            <div class="go-stats">
+                <div class="go-line">SCORE</div>
+                <div class="go-score" id="finalScore">0</div>
+                <div class="go-best">🏆 MEILLEUR : <b id="bestScore">0</b></div>
+                <div class="go-new" id="newRecord" style="display:none;">✨ NOUVEAU RECORD ! ✨</div>
+            </div>
+            <button id="replayBtn">REJOUER</button>
+            <button id="menuBtn">MENU</button>
+        </div>
     </div>
 
     <script type="module">
@@ -134,6 +159,9 @@
                 } else {
                     ctx.fillStyle = baseColor;
                 }
+                // Glow néon (plus intense sur la tête)
+                ctx.shadowBlur = isHead ? 22 : 12;
+                ctx.shadowColor = (theme === 'brainrot') ? ctx.fillStyle : baseColor;
                 const sSize = box * 0.85;
                 const offset = (box - sSize) / 2;
                 if (isHead) {
@@ -141,6 +169,7 @@
                     ctx.beginPath();
                     ctx.roundRect(s.x + offset/2, s.y + offset/2, box * 0.9, box * 0.9, 5);
                     ctx.fill();
+                    ctx.shadowBlur = 0; // pas de glow sur les yeux / la bouche
 
                     // Yeux Réalistes
                     const eyeY = s.y + box/2 + (d === "LEFT" || d === "RIGHT" ? -4 : 4);
@@ -200,20 +229,25 @@
                     ctx.globalAlpha = 1;
                 }
             });
+            ctx.shadowBlur = 0; // reset pour ne pas affecter le reste du rendu
         }
 
         function drawFood(food, theme) {
             const icon = foodIcons[theme];
             const centerX = food.x + box / 2;
             const centerY = food.y + box / 2;
+            const baseColor = getThemeBaseColor(theme);
+            // Pulsation "respirante" basée sur le temps
+            const pulse = 1 + Math.sin(performance.now() / 200) * 0.15;
+            ctx.save();
             ctx.fillStyle = "rgba(255,255,255,0.6)";
-            ctx.shadowBlur = 10;
-            ctx.shadowColor = "white";
+            ctx.shadowBlur = 18 * pulse;
+            ctx.shadowColor = baseColor;
             ctx.beginPath();
-            ctx.arc(centerX, centerY, box/1.8, 0, Math.PI * 2);
+            ctx.arc(centerX, centerY, (box / 1.8) * pulse, 0, Math.PI * 2);
             ctx.fill();
-            ctx.shadowBlur = 0;
-            ctx.font = `${box - 2}px Arial`;
+            ctx.restore();
+            ctx.font = `${(box - 2) * pulse}px Arial`;
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
             ctx.fillText(icon, centerX, centerY + 1);
@@ -277,16 +311,29 @@
         }
         document.getElementById("startBtn").onclick = checkAndStart;
 
+        let isPlaying = false, rafId = null;
+
         function start() {
-            snake = [{x: 10*box, y: 10*box}, {x: 9*box, y: 10*box}]; 
+            snake = [{x: 10*box, y: 10*box}, {x: 9*box, y: 10*box}];
             score = 0; d = "RIGHT"; isPaused = false; isCountingDown = false; canChangeDir = true;
             document.getElementById("scoreVal").innerText = "0";
             food = { x: Math.floor(Math.random()*20)*box, y: Math.floor(Math.random()*20)*box };
             if(gameLoop) clearInterval(gameLoop);
-            gameLoop = setInterval(draw, 100);
+            gameLoop = setInterval(step, 100);
+            // Boucle de rendu fluide (60 fps) découplée de la logique
+            isPlaying = true;
+            if(rafId) cancelAnimationFrame(rafId);
+            renderLoop();
         }
 
-        function draw() {
+        // --- RENDU (visuel uniquement, ~60 fps) ---
+        function renderLoop() {
+            if(!isPlaying) return;
+            render();
+            rafId = requestAnimationFrame(renderLoop);
+        }
+
+        function render() {
             for(let r=0; r<20; r++){
                 for(let c=0; c<20; c++){
                     ctx.fillStyle = (r + c) % 2 === 0 ? "#111" : "#0a0a0a";
@@ -302,18 +349,23 @@
                 ctx.fillStyle = "white"; ctx.font = isPaused ? "40px Impact" : "80px Impact";
                 ctx.textAlign = "center";
                 ctx.fillText(isPaused ? "PAUSE" : countdownValue, 200, 220);
-                return;
             }
+        }
+
+        // --- LOGIQUE (déplacement, 10 pas/s) ---
+        function step() {
+            if(isPaused || isCountingDown) return;
 
             canChangeDir = true;
             let sX = snake[0].x, sY = snake[0].y;
             if(d==="LEFT") sX -= box; if(d==="UP") sY -= box; if(d==="RIGHT") sX += box; if(d==="DOWN") sY += box;
-            
+
             if (d) {
                 // CORRECTION DÉFINITIVE BORDURES : sX strict 0-400
                 if (sX < 0 || sX >= 400 || sY < 0 || sY >= 400 || snake.some(s => s.x === sX && s.y === sY)) {
                     clearInterval(gameLoop);
-                    saveScore(user, score).then(() => { alert("GAME OVER ! Score: " + score); backToMenu(); });
+                    isPlaying = false;
+                    saveScore(user, score).then(() => showGameOver(score));
                     return;
                 }
                 if(sX === food.x && sY === food.y) {
@@ -342,13 +394,39 @@
             else if (newScore > oldS) set(ref(db, `${DB_PATH}/${key}`), { name: name, score: newScore });
         }
 
-        function backToMenu() { 
+        function showGameOver(finalScore) {
+            const prevBest = +(localStorage.getItem('snakeBest') || 0);
+            const best = Math.max(finalScore, prevBest);
+            localStorage.setItem('snakeBest', best);
+            document.getElementById("finalScore").innerText = finalScore;
+            document.getElementById("bestScore").innerText = best;
+            document.getElementById("newRecord").style.display =
+                (finalScore > prevBest && finalScore > 0) ? "block" : "none";
+            document.getElementById("game").style.display = "none";
+            const go = document.getElementById("gameover");
+            go.style.display = "block";
+            // relance l'animation d'apparition à chaque game over
+            go.style.animation = "none"; void go.offsetWidth; go.style.animation = "";
+        }
+
+        function replay() {
+            document.getElementById("gameover").style.display = "none";
+            document.getElementById("game").style.display = "block";
+            start();
+        }
+        document.getElementById("replayBtn").onclick = replay;
+
+        function backToMenu() {
             isInMenu = true;
-            document.getElementById("leaderboard").style.display = "none"; 
-            document.getElementById("game").style.display = "none"; 
-            document.getElementById("menu").style.display = "block"; 
+            isPlaying = false;
+            if(rafId) cancelAnimationFrame(rafId);
+            document.getElementById("gameover").style.display = "none";
+            document.getElementById("leaderboard").style.display = "none";
+            document.getElementById("game").style.display = "none";
+            document.getElementById("menu").style.display = "block";
         }
         document.getElementById("backBtn").onclick = backToMenu;
+        document.getElementById("menuBtn").onclick = backToMenu;
 
         document.getElementById("leaderBtn").onclick = () => {
             isInMenu = false;
@@ -362,9 +440,11 @@
         };
 
         document.addEventListener("keydown", e => {
+            const goVisible = document.getElementById("gameover").style.display === "block";
             if (e.code === "Space") {
-                if (isInMenu) checkAndStart();
-                else togglePause();
+                if (goVisible) replay();
+                else if (isInMenu) checkAndStart();
+                else if (isPlaying) togglePause();
             }
             if(e.key.includes("Arrow")) setDir(e.key.replace("Arrow","").toUpperCase());
         });
