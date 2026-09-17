@@ -13,13 +13,14 @@
         body {
             margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
             font-family: 'Segoe UI', system-ui, sans-serif; transition: background .6s ease; color: #fff;
-            background-size: cover !important; background-position: center !important;
-            overflow: hidden; touch-action: none;
+            overflow: hidden; touch-action: none; background: #05070b;
         }
-        /* Voile sombre au-dessus du fond pour le contraste */
-        body::before {
-            content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
-            background: radial-gradient(circle at 50% 40%, rgba(0,0,0,.35), rgba(0,0,0,.82));
+        /* Calque d'ambiance anime (motif signature par theme, teinte a la couleur du serpent) */
+        #bg { position: fixed; inset: 0; z-index: 0; display: block; }
+        /* Vignette pour la profondeur et le contraste */
+        body::after {
+            content: ""; position: fixed; inset: 0; z-index: 1; pointer-events: none;
+            background: radial-gradient(circle at 50% 42%, transparent 52%, rgba(0,0,0,.62));
         }
 
         .user-bar {
@@ -38,15 +39,16 @@
         }
         .exit-btn:hover { background: #ff4444; color: #fff; }
 
-        body.theme-city { background: url('https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?q=80&w=2000'); --theme-color: #00d4ff; --theme-rgb: 0,212,255; }
-        body.theme-horror { background: url('image_7885eb.jpg'); --theme-color: #b45cff; --theme-rgb: 180,92,255; }
-        body.theme-sea { background: url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=2000'); --theme-color: #29b6f6; --theme-rgb: 41,182,246; }
-        body.theme-brainrot { background: url('image_7885a8.jpg'); --theme-color: #c0ff00; --theme-rgb: 192,255,0; }
-        body.theme-sakura { background: url('https://images.unsplash.com/photo-1522383225653-ed111181a951?q=80&w=2000'); --theme-color: #ff80ab; --theme-rgb: 255,128,171; }
-        body.theme-cyber { background: url('https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=2000'); --theme-color: #39ff14; --theme-rgb: 57,255,20; }
+        /* Fonds "Synth Arcade" : degrade sombre teinte + halo haut (le canvas #bg ajoute le motif anime par-dessus) */
+        body.theme-city   { --theme-color: #00d4ff; --theme-rgb: 0,212,255;   background: radial-gradient(1100px 760px at 50% -12%, rgba(0,212,255,.16), transparent 60%), linear-gradient(180deg, #061019 0%, #04070f 55%, #020409 100%); }
+        body.theme-horror { --theme-color: #b45cff; --theme-rgb: 180,92,255;  background: radial-gradient(1000px 720px at 50% -12%, rgba(180,92,255,.16), transparent 60%), linear-gradient(180deg, #150a1e 0%, #0c0614 55%, #060309 100%); }
+        body.theme-sea    { --theme-color: #29b6f6; --theme-rgb: 41,182,246;  background: radial-gradient(1100px 800px at 50% -14%, rgba(41,182,246,.18), transparent 62%), linear-gradient(180deg, #072033 0%, #05131f 55%, #02080f 100%); }
+        body.theme-brainrot { --theme-color: #c0ff00; --theme-rgb: 192,255,0; background: radial-gradient(1000px 720px at 50% -12%, rgba(192,255,0,.14), transparent 58%), linear-gradient(180deg, #12180a 0%, #0b1004 55%, #050702 100%); }
+        body.theme-sakura { --theme-color: #ff80ab; --theme-rgb: 255,128,171; background: radial-gradient(1000px 760px at 50% -12%, rgba(255,128,171,.18), transparent 60%), linear-gradient(180deg, #241322 0%, #170b16 55%, #0b050a 100%); }
+        body.theme-cyber  { --theme-color: #39ff14; --theme-rgb: 57,255,20;   background: radial-gradient(1000px 720px at 50% -12%, rgba(57,255,20,.15), transparent 58%), linear-gradient(180deg, #08160a 0%, #050d06 55%, #020602 100%); }
 
         #wrapper {
-            position: relative; z-index: 1;
+            position: relative; z-index: 2;
             background: rgba(10,12,18,.8); backdrop-filter: blur(16px);
             padding: 30px; border-radius: 24px; text-align: center; width: 460px; max-width: 94vw;
             border: 1px solid rgba(var(--theme-rgb), .45);
@@ -134,6 +136,8 @@
 </head>
 <body class="theme-city">
 
+    <canvas id="bg"></canvas>
+
     <div class="user-bar">
         <span> <b id="topNavUser">Invité</b></span>
         <button class="exit-btn" onclick="location.href='https://joxiagame.github.io/Joxia-Games/'">QUITTER</button>
@@ -209,6 +213,143 @@
         };
         const app = initializeApp(firebaseConfig); const db = getDatabase(app);
         const DB_PATH = 'games/Snake/scores';
+
+        /* ================= Décor d'ambiance animé (Synth Arcade) ================= */
+        const bg = document.getElementById('bg');
+        const bgx = bg.getContext('2d');
+        let bgW = 0, bgH = 0, bgDpr = 1, bgTheme = 'city', bgParticles = [], bgT = 0, bgLast = performance.now();
+
+        const BG = {
+            city:     { motif: 'grid',    rgb: [0, 212, 255],   n: 0 },
+            cyber:    { motif: 'rain',    rgb: [57, 255, 20],   n: 90 },
+            sea:      { motif: 'bubbles', rgb: [41, 182, 246],  n: 46 },
+            sakura:   { motif: 'petals',  rgb: [255, 128, 171], n: 40 },
+            horror:   { motif: 'fog',     rgb: [180, 92, 255],  n: 16 },
+            brainrot: { motif: 'orbs',    rgb: [192, 255, 0],   n: 60 }
+        };
+
+        const rand = (a, b) => a + Math.random() * (b - a);
+
+        function bgResize() {
+            bgDpr = Math.min(window.devicePixelRatio || 1, 2);
+            bgW = window.innerWidth; bgH = window.innerHeight;
+            bg.width = bgW * bgDpr; bg.height = bgH * bgDpr;
+            bg.style.width = bgW + 'px'; bg.style.height = bgH + 'px';
+            bgx.setTransform(bgDpr, 0, 0, bgDpr, 0, 0);
+        }
+        window.addEventListener('resize', () => { bgResize(); bgInit(bgTheme); });
+
+        function bgSpawn(motif, initial) {
+            const p = {};
+            switch (motif) {
+                case 'rain':
+                    p.x = rand(0, bgW); p.y = initial ? rand(0, bgH) : -rand(20, 200);
+                    p.len = rand(12, 40); p.spd = rand(220, 520); p.a = rand(.15, .6); break;
+                case 'bubbles':
+                    p.x = rand(0, bgW); p.y = initial ? rand(0, bgH) : bgH + rand(0, 60);
+                    p.r = rand(2, 7); p.spd = rand(20, 70); p.drift = rand(-16, 16); p.ph = rand(0, 6.28); p.a = rand(.15, .45); break;
+                case 'petals':
+                    p.x = rand(0, bgW); p.y = initial ? rand(0, bgH) : -rand(10, 120);
+                    p.r = rand(4, 9); p.spd = rand(30, 70); p.sway = rand(20, 60); p.ph = rand(0, 6.28); p.rot = rand(0, 6.28); p.vr = rand(-1.5, 1.5); p.a = rand(.25, .6); break;
+                case 'fog':
+                    p.x = rand(0, bgW); p.y = rand(bgH * .1, bgH * .9);
+                    p.r = rand(120, 300); p.vx = rand(-12, 12); p.vy = rand(-6, 6); p.a = rand(.04, .1); break;
+                case 'orbs': default:
+                    p.x = rand(0, bgW); p.y = rand(0, bgH);
+                    p.r = rand(1.5, 5); p.vx = rand(-20, 20); p.vy = rand(-20, 20); p.a = rand(.2, .6); break;
+            }
+            return p;
+        }
+
+        function bgInit(theme) {
+            const cfg = BG[theme] || BG.city;
+            bgParticles = [];
+            for (let i = 0; i < cfg.n; i++) bgParticles.push(bgSpawn(cfg.motif, true));
+        }
+
+        function setBgTheme(theme) { if (theme !== bgTheme || !bgParticles) { bgTheme = theme; bgInit(theme); } }
+
+        function bgOrb(x, y, rad, r, g, b, a) {
+            const gg = bgx.createRadialGradient(x, y, 0, x, y, rad * 3);
+            gg.addColorStop(0, `rgba(${r},${g},${b},${a})`);
+            gg.addColorStop(1, `rgba(${r},${g},${b},0)`);
+            bgx.fillStyle = gg; bgx.beginPath(); bgx.arc(x, y, rad * 3, 0, 6.2832); bgx.fill();
+            bgx.fillStyle = `rgba(${r},${g},${b},${Math.min(a + .2, .9)})`;
+            bgx.beginPath(); bgx.arc(x, y, rad, 0, 6.2832); bgx.fill();
+        }
+        function bgPetal(x, y, rad, rot, r, g, b, a) {
+            bgx.save(); bgx.translate(x, y); bgx.rotate(rot);
+            bgx.fillStyle = `rgba(${r},${g},${b},${a})`;
+            bgx.beginPath(); bgx.ellipse(0, 0, rad, rad * .55, 0, 0, 6.2832); bgx.fill();
+            bgx.restore();
+        }
+        function bgDrawGrid(r, g, b) {
+            const horizon = bgH * 0.42, vpX = bgW / 2;
+            bgx.strokeStyle = `rgba(${r},${g},${b},0.16)`; bgx.lineWidth = 1;
+            const cnt = 22, speed = 0.16, frac = (bgT * speed) % 1;
+            for (let i = 0; i < cnt; i++) {
+                const f = (i + frac) / cnt;
+                const yy = horizon + (bgH - horizon) * (f * f);
+                bgx.globalAlpha = Math.min(f * 1.8, 1);
+                bgx.beginPath(); bgx.moveTo(0, yy); bgx.lineTo(bgW, yy); bgx.stroke();
+            }
+            bgx.globalAlpha = 1;
+            const vcnt = 26;
+            for (let i = 0; i <= vcnt; i++) {
+                const t = i / vcnt, xBottom = t * bgW * 2 - bgW * 0.5;
+                bgx.beginPath(); bgx.moveTo(vpX, horizon); bgx.lineTo(xBottom, bgH); bgx.stroke();
+            }
+            bgx.strokeStyle = `rgba(${r},${g},${b},0.5)`; bgx.lineWidth = 2;
+            bgx.beginPath(); bgx.moveTo(0, horizon); bgx.lineTo(bgW, horizon); bgx.stroke();
+        }
+
+        function bgLoop(now) {
+            const dt = Math.min((now - bgLast) / 1000, 0.05); bgLast = now; bgT += dt;
+            const cfg = BG[bgTheme] || BG.city;
+            const [r, g, b] = cfg.rgb;
+            bgx.clearRect(0, 0, bgW, bgH);
+
+            if (cfg.motif === 'grid') bgDrawGrid(r, g, b);
+
+            for (const p of bgParticles) {
+                switch (cfg.motif) {
+                    case 'rain':
+                        p.y += p.spd * dt;
+                        bgx.strokeStyle = `rgba(${r},${g},${b},${p.a})`; bgx.lineWidth = 1.5;
+                        bgx.beginPath(); bgx.moveTo(p.x, p.y); bgx.lineTo(p.x, p.y - p.len); bgx.stroke();
+                        if (p.y - p.len > bgH) Object.assign(p, bgSpawn('rain', false));
+                        break;
+                    case 'bubbles':
+                        p.y -= p.spd * dt; p.x += Math.sin(bgT + p.ph) * p.drift * dt;
+                        bgOrb(p.x, p.y, p.r, r, g, b, p.a);
+                        if (p.y + p.r < 0) Object.assign(p, bgSpawn('bubbles', false));
+                        break;
+                    case 'petals':
+                        p.y += p.spd * dt; p.x += Math.sin(bgT * .8 + p.ph) * p.sway * dt; p.rot += p.vr * dt;
+                        bgPetal(p.x, p.y, p.r, p.rot, r, g, b, p.a);
+                        if (p.y - p.r > bgH) Object.assign(p, bgSpawn('petals', false));
+                        break;
+                    case 'fog': {
+                        p.x += p.vx * dt; p.y += p.vy * dt;
+                        if (p.x < -p.r) p.x = bgW + p.r; if (p.x > bgW + p.r) p.x = -p.r;
+                        if (p.y < -p.r) p.y = bgH + p.r; if (p.y > bgH + p.r) p.y = -p.r;
+                        const fg = bgx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r);
+                        fg.addColorStop(0, `rgba(${r},${g},${b},${p.a})`); fg.addColorStop(1, `rgba(${r},${g},${b},0)`);
+                        bgx.fillStyle = fg; bgx.beginPath(); bgx.arc(p.x, p.y, p.r, 0, 6.2832); bgx.fill();
+                        break;
+                    }
+                    case 'orbs': default:
+                        p.x += p.vx * dt; p.y += p.vy * dt;
+                        if (p.x < 0) p.x = bgW; if (p.x > bgW) p.x = 0;
+                        if (p.y < 0) p.y = bgH; if (p.y > bgH) p.y = 0;
+                        bgOrb(p.x, p.y, p.r, r, g, b, p.a);
+                        break;
+                }
+            }
+            requestAnimationFrame(bgLoop);
+        }
+
+        bgResize(); bgInit(bgTheme); requestAnimationFrame(bgLoop);
 
         const canvas = document.getElementById("snakeGame"); const ctx = canvas.getContext("2d");
         const box = 20; let snake, food, d, score, gameLoop, th;
@@ -364,6 +505,7 @@
         function updateUI() {
             const v = document.getElementById("themeSelect").value;
             document.body.className = "theme-" + v;
+            setBgTheme(v);
             const names = { city: 'VILLE', horror: 'MANOIR', sea: 'PLAGE', sakura: 'SAKURA', brainrot: 'BRAINROT', cyber: 'CYBER' };
             document.getElementById("title").innerText = "SNAKE " + names[v];
         }
@@ -416,6 +558,7 @@
         function checkAndStart() {
             isInMenu = false;
             th = document.getElementById("themeSelect").value;
+            setBgTheme(th);
             document.getElementById("menu").style.display="none"; 
             document.getElementById("game").style.display="block";
             document.getElementById("pDisplay").innerText = user;
