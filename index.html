@@ -4,58 +4,132 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>SNAKE MASTER PRO</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
     <style>
-        :root { --theme-color: #39ff14; --bg-ui: rgba(0, 0, 0, 0.9); }
-        body { 
+        :root { --theme-color: #39ff14; --theme-rgb: 57,255,20; }
+        * { box-sizing: border-box; }
+        body {
             margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
-            font-family: 'Segoe UI', sans-serif; transition: 0.5s;
+            font-family: 'Segoe UI', system-ui, sans-serif; transition: background .6s ease; color: #fff;
             background-size: cover !important; background-position: center !important;
             overflow: hidden; touch-action: none;
         }
+        /* Voile sombre au-dessus du fond pour le contraste */
+        body::before {
+            content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+            background: radial-gradient(circle at 50% 40%, rgba(0,0,0,.35), rgba(0,0,0,.82));
+        }
 
         .user-bar {
-            position: fixed; top: 20px; right: 20px; background: rgba(0, 0, 0, 0.9);
-            padding: 10px 20px; border-radius: 50px; border: 2px solid var(--theme-color); 
-            display: flex; align-items: center; gap: 15px; color: white; z-index: 1000;
+            position: fixed; top: 18px; right: 18px; z-index: 1000;
+            background: rgba(12,14,20,.7); backdrop-filter: blur(10px);
+            padding: 8px 10px 8px 18px; border-radius: 50px;
+            border: 1px solid rgba(var(--theme-rgb), .5);
+            box-shadow: 0 0 20px rgba(var(--theme-rgb), .25);
+            display: flex; align-items: center; gap: 12px; font-size: 14px;
         }
-        .user-bar b { color: var(--theme-color); }
-        .exit-btn { background: #ff4444; border: none; color: white; padding: 5px 12px; border-radius: 20px; cursor: pointer; font-size: 10px; font-weight: bold; }
+        .user-bar b { color: var(--theme-color); font-weight: 700; }
+        .exit-btn {
+            background: rgba(255,68,68,.15); border: 1px solid #ff4444;
+            color: #ff6b6b; padding: 6px 14px; border-radius: 20px; cursor: pointer;
+            font-size: 11px; font-weight: 700; letter-spacing: 1px; transition: .2s;
+        }
+        .exit-btn:hover { background: #ff4444; color: #fff; }
 
-        body.theme-city { background: url('https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?q=80&w=2000'); --theme-color: #00d4ff; }
-        body.theme-horror { background: url('image_7885eb.jpg'); --theme-color: #a349a4; }
-        body.theme-sea { background: url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=2000'); --theme-color: #29b6f6; }
-        body.theme-brainrot { background: url('image_7885a8.jpg'); --theme-color: #c0ff00; }
-        body.theme-sakura { background: url('https://images.unsplash.com/photo-1522383225653-ed111181a951?q=80&w=2000'); --theme-color: #ff80ab; }
-        body.theme-cyber { background: url('https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=2000'); --theme-color: #39ff14; }
+        body.theme-city { background: url('https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?q=80&w=2000'); --theme-color: #00d4ff; --theme-rgb: 0,212,255; }
+        body.theme-horror { background: url('image_7885eb.jpg'); --theme-color: #b45cff; --theme-rgb: 180,92,255; }
+        body.theme-sea { background: url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=2000'); --theme-color: #29b6f6; --theme-rgb: 41,182,246; }
+        body.theme-brainrot { background: url('image_7885a8.jpg'); --theme-color: #c0ff00; --theme-rgb: 192,255,0; }
+        body.theme-sakura { background: url('https://images.unsplash.com/photo-1522383225653-ed111181a951?q=80&w=2000'); --theme-color: #ff80ab; --theme-rgb: 255,128,171; }
+        body.theme-cyber { background: url('https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=2000'); --theme-color: #39ff14; --theme-rgb: 57,255,20; }
 
-        #wrapper { background: var(--bg-ui); padding: 25px; border-radius: 20px; border: 4px solid var(--theme-color); text-align: center; width: 450px; box-shadow: 0 0 40px rgba(0,0,0,0.8); color: white; }
-        h1 { color: var(--theme-color); text-transform: uppercase; letter-spacing: 4px; }
-        select { padding: 12px; margin: 10px 0; width: 85%; border-radius: 8px; border: 2px solid var(--theme-color); background: #000; color: white; text-align: center; }
-        button { background: var(--theme-color) !important; color: #000 !important; padding: 15px 25px; border: none; border-radius: 8px; font-weight: 900; cursor: pointer; text-transform: uppercase; margin: 10px; }
+        #wrapper {
+            position: relative; z-index: 1;
+            background: rgba(10,12,18,.8); backdrop-filter: blur(16px);
+            padding: 30px; border-radius: 24px; text-align: center; width: 460px; max-width: 94vw;
+            border: 1px solid rgba(var(--theme-rgb), .45);
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,.04), 0 20px 60px rgba(0,0,0,.7), 0 0 50px rgba(var(--theme-rgb), .18);
+        }
 
-        #pauseBtn { background: transparent !important; color: var(--theme-color) !important; border: 2px solid var(--theme-color) !important; padding: 8px 20px; font-size: 12px; }
-        #pauseBtn.active { background: var(--theme-color) !important; color: #000 !important; }
+        h1 {
+            font-family: 'Orbitron', sans-serif; color: var(--theme-color);
+            text-transform: uppercase; letter-spacing: 3px; font-weight: 900;
+            margin: 6px 0 18px; text-shadow: 0 0 18px rgba(var(--theme-rgb), .6);
+        }
 
-        #touch-ui { display: none; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 180px; margin: 15px auto; }
-        .t-btn { width: 55px; height: 55px; background: rgba(255,255,255,0.1); border: 2px solid var(--theme-color); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 24px; color: var(--theme-color); }
+        select {
+            font-family: 'Orbitron', sans-serif; padding: 13px; margin: 8px 0; width: 88%;
+            border-radius: 12px; border: 1px solid rgba(var(--theme-rgb), .5);
+            background: rgba(0,0,0,.55); color: #fff; text-align: center; font-size: 14px; cursor: pointer; outline: none;
+        }
 
-        canvas { background: #000; border: 2px solid var(--theme-color); display: block; margin: 20px auto; }
+        button {
+            font-family: 'Orbitron', sans-serif; background: var(--theme-color); color: #05070a;
+            padding: 14px 26px; border: none; border-radius: 12px; font-weight: 700; cursor: pointer;
+            text-transform: uppercase; letter-spacing: 1px; margin: 8px; font-size: 13px;
+            box-shadow: 0 6px 18px rgba(var(--theme-rgb), .35);
+            transition: transform .15s, box-shadow .2s, filter .2s;
+        }
+        button:hover { transform: translateY(-2px); filter: brightness(1.1); box-shadow: 0 10px 26px rgba(var(--theme-rgb), .55); }
+        button:active { transform: translateY(0); }
+
+        /* Boutons secondaires (contour) */
+        #leaderBtn, #backBtn, #menuBtn {
+            background: transparent; color: var(--theme-color);
+            border: 1px solid rgba(var(--theme-rgb), .6); box-shadow: none;
+        }
+        #leaderBtn:hover, #backBtn:hover, #menuBtn:hover { background: rgba(var(--theme-rgb), .12); box-shadow: 0 0 20px rgba(var(--theme-rgb), .3); }
+
+        .toggle-row { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 14px 0; font-size: 12px; letter-spacing: 1px; color: #cdd3dd; }
+        #touchToggle { padding: 8px 20px; font-size: 12px; background: transparent; color: var(--theme-color); border: 1px solid var(--theme-color); box-shadow: none; }
+
+        /* HUD en jeu */
+        .hud { display: flex; justify-content: space-between; align-items: center; font-family: 'Orbitron', sans-serif; margin-bottom: 12px; gap: 10px; }
+        .hud-name { color: var(--theme-color); font-weight: 700; font-size: 13px; letter-spacing: 1px; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .hud-score { font-size: 13px; letter-spacing: 1px; color: #cdd3dd; }
+        .hud-score b { color: var(--theme-color); font-size: 18px; margin-left: 4px; }
+        #pauseBtn { background: transparent; color: var(--theme-color); border: 1px solid rgba(var(--theme-rgb), .6); padding: 8px 18px; font-size: 11px; box-shadow: none; margin: 0; }
+        #pauseBtn.active { background: var(--theme-color); color: #05070a; }
+
+        #touch-ui { display: none; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 190px; margin: 16px auto 4px; }
+        .t-btn {
+            width: 58px; height: 58px; background: rgba(255,255,255,.06);
+            border: 1px solid rgba(var(--theme-rgb), .5); border-radius: 14px;
+            display: flex; align-items: center; justify-content: center; font-size: 22px;
+            color: var(--theme-color); cursor: pointer; user-select: none; transition: .15s;
+        }
+        .t-btn:active { background: rgba(var(--theme-rgb), .25); }
+
+        canvas {
+            background: #06070a; border: 1px solid rgba(var(--theme-rgb), .5);
+            border-radius: 14px; display: block; margin: 4px auto 0; max-width: 100%;
+            box-shadow: 0 0 30px rgba(var(--theme-rgb), .2), inset 0 0 40px rgba(0,0,0,.6);
+        }
 
         /* --- Écran Game Over --- */
         #gameover { animation: goIn 0.35s ease-out; }
         @keyframes goIn { from { opacity: 0; transform: scale(0.85); } to { opacity: 1; transform: scale(1); } }
-        .go-title { color: #ff4444 !important; text-shadow: 0 0 18px rgba(255,68,68,0.7); font-size: 40px; margin-bottom: 10px; }
-        .go-stats { margin: 20px 0; }
-        .go-line { color: #aaa; letter-spacing: 3px; font-size: 13px; }
-        .go-score { color: var(--theme-color); font-size: 60px; font-weight: 900; text-shadow: 0 0 20px var(--theme-color); line-height: 1.1; }
-        .go-best { color: #fff; margin-top: 10px; font-size: 15px; }
+        .go-title { font-family: 'Orbitron', sans-serif; color: #ff4b5c; text-shadow: 0 0 22px rgba(255,75,92,.7); font-size: 38px; margin-bottom: 6px; }
+        .go-stats { margin: 18px 0; }
+        .go-line { font-family: 'Orbitron', sans-serif; color: #8b93a3; letter-spacing: 4px; font-size: 12px; }
+        .go-score { font-family: 'Orbitron', sans-serif; color: var(--theme-color); font-size: 62px; font-weight: 900; text-shadow: 0 0 24px rgba(var(--theme-rgb), .7); line-height: 1.1; }
+        .go-best { color: #e6e9ef; margin-top: 8px; font-size: 15px; }
         .go-best b { color: var(--theme-color); }
-        .go-new { color: #ffd700; font-weight: 900; margin-top: 12px; letter-spacing: 1px; animation: blink 0.8s ease-in-out infinite alternate; }
+        .go-new { font-family: 'Orbitron', sans-serif; color: #ffd54a; font-weight: 900; margin-top: 12px; letter-spacing: 1px; animation: blink 0.8s ease-in-out infinite alternate; }
         @keyframes blink { from { opacity: 0.4; } to { opacity: 1; } }
 
-        table { width: 100%; color: white; border-collapse: collapse; }
-        th { color: var(--theme-color); border-bottom: 2px solid var(--theme-color); padding: 10px; }
-        td { padding: 8px; border-bottom: 1px solid #333; }
+        /* --- Classement --- */
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        th { font-family: 'Orbitron', sans-serif; color: var(--theme-color); border-bottom: 1px solid rgba(var(--theme-rgb), .4); padding: 10px; letter-spacing: 1px; font-size: 12px; }
+        td { padding: 9px 10px; border-bottom: 1px solid rgba(255,255,255,.06); }
+        tr td:first-child { text-align: left; }
+        tr td:last-child { text-align: right; font-weight: 700; color: var(--theme-color); }
+        tr.me { background: rgba(var(--theme-rgb), .12); }
+        tr.me td { color: #fff; }
+        .rank { display: inline-block; width: 22px; color: #8b93a3; font-weight: 700; }
+        .lb-empty { color: #8b93a3; padding: 20px; font-style: italic; text-align: center !important; }
     </style>
 </head>
 <body class="theme-city">
@@ -76,9 +150,8 @@
                 <option value="brainrot">🤪 BRAINROT</option>
                 <option value="cyber">⚡ CYBER</option>
             </select>
-            <br>
-            <div style="margin: 10px;">
-                <label>Tactile : </label>
+            <div class="toggle-row">
+                <span>CONTRÔLES TACTILES</span>
                 <button id="touchToggle">OFF</button>
             </div>
             <button id="startBtn">DÉMARRER</button>
@@ -86,10 +159,10 @@
         </div>
 
         <div id="game" style="display:none;">
-            <div style="display:flex; justify-content: space-between; align-items: center; font-weight:bold; color:var(--theme-color); margin-bottom: 5px;">
-                <span id="pDisplay"></span>
+            <div class="hud">
+                <span class="hud-name" id="pDisplay"></span>
                 <button id="pauseBtn">PAUSE</button>
-                <span>SCORE: <b id="scoreVal" style="color:white">0</b></span>
+                <span class="hud-score">SCORE <b id="scoreVal">0</b></span>
             </div>
             <canvas id="snakeGame" width="400" height="400"></canvas>
             <div id="touch-ui">
@@ -144,92 +217,121 @@
 
         function getThemeBaseColor(theme) {
             const colors = {
-                city: "#00d4ff", horror: "#a349a4", sea: "#29b6f6",
+                city: "#00d4ff", horror: "#b45cff", sea: "#29b6f6",
                 sakura: "#ff80ab", brainrot: "#c0ff00", cyber: "#39ff14"
             };
             return colors[theme] || "#39ff14";
         }
 
-        function drawSnake(snake, theme) {
+        function hexToRgba(hex, a) {
+            const h = hex.replace('#', '');
+            const r = parseInt(h.substring(0, 2), 16);
+            const g = parseInt(h.substring(2, 4), 16);
+            const b = parseInt(h.substring(4, 6), 16);
+            return `rgba(${r},${g},${b},${a})`;
+        }
+
+        // Plateau : fond sombre dégradé + grille néon subtile + vignette
+        function drawBoard(theme) {
             const baseColor = getThemeBaseColor(theme);
-            snake.forEach((s, index) => {
-                const isHead = index === 0;
+            const bg = ctx.createRadialGradient(200, 200, 30, 200, 200, 300);
+            bg.addColorStop(0, "#14161d");
+            bg.addColorStop(1, "#07080b");
+            ctx.fillStyle = bg;
+            ctx.fillRect(0, 0, 400, 400);
+
+            ctx.strokeStyle = hexToRgba(baseColor, 0.09);
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            for (let i = 1; i < 20; i++) {
+                ctx.moveTo(i * box + 0.5, 0); ctx.lineTo(i * box + 0.5, 400);
+                ctx.moveTo(0, i * box + 0.5); ctx.lineTo(400, i * box + 0.5);
+            }
+            ctx.stroke();
+
+            const vg = ctx.createRadialGradient(200, 200, 120, 200, 200, 290);
+            vg.addColorStop(0, "rgba(0,0,0,0)");
+            vg.addColorStop(1, "rgba(0,0,0,.55)");
+            ctx.fillStyle = vg;
+            ctx.fillRect(0, 0, 400, 400);
+        }
+
+        function drawSnake(snake, theme) {
+            if (!snake || !snake.length) return;
+            const baseColor = getThemeBaseColor(theme);
+            const center = (s) => ({ x: s.x + box / 2, y: s.y + box / 2 });
+            const n = snake.length;
+
+            ctx.save();
+            ctx.lineJoin = "round";
+            ctx.lineCap = "round";
+
+            // --- Corps continu : segments reliés, dégradé tête->queue, queue effilée ---
+            for (let i = n - 1; i > 0; i--) {
+                const t = i / n;                 // ~1 vers la queue, ~0 vers la tête
+                const a = center(snake[i]);
+                const b = center(snake[i - 1]);
                 if (theme === 'brainrot') {
-                    ctx.fillStyle = `hsl(${ (index * 40) % 360 }, 80%, 60%)`;
-                } else {
-                    ctx.fillStyle = baseColor;
-                }
-                // Glow néon (plus intense sur la tête)
-                ctx.shadowBlur = isHead ? 22 : 12;
-                ctx.shadowColor = (theme === 'brainrot') ? ctx.fillStyle : baseColor;
-                const sSize = box * 0.85;
-                const offset = (box - sSize) / 2;
-                if (isHead) {
-                    // Tête
-                    ctx.beginPath();
-                    ctx.roundRect(s.x + offset/2, s.y + offset/2, box * 0.9, box * 0.9, 5);
-                    ctx.fill();
-                    ctx.shadowBlur = 0; // pas de glow sur les yeux / la bouche
-
-                    // Yeux Réalistes
-                    const eyeY = s.y + box/2 + (d === "LEFT" || d === "RIGHT" ? -4 : 4);
-                    const eyeX1 = s.x + box/2 + (d === "UP" || d === "DOWN" ? -4 : 4);
-                    const eyeX2 = s.x + box/2 + (d === "UP" || d === "DOWN" ? 4 : 4);
-
-                    const drawEye = (x, y) => {
-                        ctx.fillStyle = "white";
-                        ctx.beginPath(); ctx.arc(x, y, 3.5, 0, Math.PI * 2); ctx.fill();
-                        ctx.fillStyle = "black";
-                        ctx.beginPath(); ctx.arc(x, y, 1.8, 0, Math.PI * 2); ctx.fill();
-                        ctx.fillStyle = "white";
-                        ctx.beginPath(); ctx.arc(x - 0.8, y - 0.8, 0.6, 0, Math.PI * 2); ctx.fill();
-                    };
-
-                    drawEye(eyeX1, eyeY);
-                    drawEye(eyeX2, eyeY);
-
-                    // Bouche Réaliste en Blanc (Ligne arquée avec crocs discrets et ombre)
-                    ctx.save();
-                    ctx.translate(s.x + box/2, s.y + box/2);
-                    
-                    if(d === "RIGHT") ctx.rotate(0);
-                    else if(d === "LEFT") ctx.rotate(Math.PI);
-                    else if(d === "UP") ctx.rotate(-Math.PI/2);
-                    else if(d === "DOWN") ctx.rotate(Math.PI/2);
-
-                    // Ombre portée grise subtile pour le volume
-                    ctx.strokeStyle = "rgba(100,100,100,0.4)";
-                    ctx.lineWidth = 1.5;
-                    ctx.beginPath();
-                    ctx.arc(box/2 - 4, 1, 4, -Math.PI/2, Math.PI/2);
-                    ctx.stroke();
-
-                    // Ligne arquée principale blanche
-                    ctx.strokeStyle = "white";
-                    ctx.lineWidth = 1.5;
-                    ctx.beginPath();
-                    ctx.arc(box/2 - 4, 0, 4, -Math.PI/2, Math.PI/2);
-                    ctx.stroke();
-
-                    // Petits Crocs Blancs Pointus
-                    ctx.fillStyle = "white";
-                    ctx.beginPath();
-                    // Croc supérieur
-                    ctx.moveTo(box/2 - 2, -2.5); ctx.lineTo(box/2 + 1, -1); ctx.lineTo(box/2 - 2, 0.5); ctx.fill();
-                    // Croc inférieur
-                    ctx.moveTo(box/2 - 2, 0.5); ctx.lineTo(box/2 + 1, 2); ctx.lineTo(box/2 - 2, 3.5); ctx.fill();
-
-                    ctx.restore();
-
-                } else {
-                    if (theme !== 'brainrot') ctx.globalAlpha = 1 - (index / snake.length * 0.4);
-                    ctx.beginPath();
-                    ctx.roundRect(s.x + offset, s.y + offset, sSize, sSize, 4);
-                    ctx.fill();
+                    ctx.strokeStyle = `hsl(${(i * 32) % 360}, 85%, 60%)`;
+                    ctx.shadowColor = ctx.strokeStyle;
                     ctx.globalAlpha = 1;
+                } else {
+                    ctx.strokeStyle = baseColor;
+                    ctx.shadowColor = baseColor;
+                    ctx.globalAlpha = 1 - t * 0.5;      // fondu vers la queue
                 }
+                ctx.shadowBlur = 12;
+                ctx.lineWidth = box * (0.84 - t * 0.4); // amincissement vers la queue
+                ctx.beginPath();
+                ctx.moveTo(a.x, a.y);
+                ctx.lineTo(b.x, b.y);
+                ctx.stroke();
+            }
+            ctx.globalAlpha = 1;
+
+            // --- Tête ---
+            const h = center(snake[0]);
+            const headColor = (theme === 'brainrot') ? `hsl(0, 85%, 60%)` : baseColor;
+            ctx.shadowBlur = 18;
+            ctx.shadowColor = headColor;
+            ctx.fillStyle = headColor;
+            ctx.beginPath();
+            ctx.arc(h.x, h.y, box * 0.46, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            // vecteur de direction (et perpendiculaire)
+            const dv = { LEFT: [-1, 0], RIGHT: [1, 0], UP: [0, -1], DOWN: [0, 1] }[d] || [1, 0];
+            const pv = [-dv[1], dv[0]];
+
+            // langue fourchue animée (sort par l'avant, par intermittence)
+            if (Math.sin(performance.now() / 150) > 0.3) {
+                const bx = h.x + dv[0] * box * 0.46, by = h.y + dv[1] * box * 0.46;
+                const tx = bx + dv[0] * 7, ty = by + dv[1] * 7;
+                ctx.strokeStyle = "#ff3b6b";
+                ctx.lineWidth = 1.6;
+                ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(tx, ty); ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(tx, ty); ctx.lineTo(tx + dv[0] * 3 + pv[0] * 2.5, ty + dv[1] * 3 + pv[1] * 2.5);
+                ctx.moveTo(tx, ty); ctx.lineTo(tx + dv[0] * 3 - pv[0] * 2.5, ty + dv[1] * 3 - pv[1] * 2.5);
+                ctx.stroke();
+            }
+
+            // yeux (bien placés de chaque côté, regard vers l'avant)
+            const eyeFwd = 3, eyeSide = 4.5, eyeR = 3.2;
+            [1, -1].forEach(sgn => {
+                const ex = h.x + dv[0] * eyeFwd + pv[0] * eyeSide * sgn;
+                const ey = h.y + dv[1] * eyeFwd + pv[1] * eyeSide * sgn;
+                ctx.fillStyle = "#fff";
+                ctx.beginPath(); ctx.arc(ex, ey, eyeR, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = "#0a0a0a";
+                ctx.beginPath(); ctx.arc(ex + dv[0] * 1.2, ey + dv[1] * 1.2, 1.5, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = "rgba(255,255,255,.9)";
+                ctx.beginPath(); ctx.arc(ex - 0.8, ey - 0.8, 0.7, 0, Math.PI * 2); ctx.fill();
             });
-            ctx.shadowBlur = 0; // reset pour ne pas affecter le reste du rendu
+
+            ctx.restore();
+            ctx.shadowBlur = 0;
         }
 
         function drawFood(food, theme) {
@@ -267,7 +369,14 @@
             isTouchEnabled = !isTouchEnabled;
             const btn = document.getElementById("touchToggle");
             btn.innerText = isTouchEnabled ? "ON" : "OFF";
-            btn.style.background = isTouchEnabled ? "#39ff14" : "#ff4444";
+            btn.style.background = isTouchEnabled ? "var(--theme-color)" : "transparent";
+            btn.style.color = isTouchEnabled ? "#05070a" : "var(--theme-color)";
+        }
+
+        function escapeHtml(str) {
+            return String(str).replace(/[&<>"']/g, c => (
+                { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+            ));
         }
         document.getElementById("touchToggle").onclick = toggleTouch;
 
@@ -334,21 +443,26 @@
         }
 
         function render() {
-            for(let r=0; r<20; r++){
-                for(let c=0; c<20; c++){
-                    ctx.fillStyle = (r + c) % 2 === 0 ? "#111" : "#0a0a0a";
-                    ctx.fillRect(c * box, r * box, box, box);
-                }
-            }
-
+            drawBoard(th);
             drawSnake(snake, th);
             drawFood(food, th);
 
             if(isPaused || isCountingDown) {
-                ctx.fillStyle = "rgba(0,0,0,0.7)"; ctx.fillRect(0,0,400,400);
-                ctx.fillStyle = "white"; ctx.font = isPaused ? "40px Impact" : "80px Impact";
-                ctx.textAlign = "center";
-                ctx.fillText(isPaused ? "PAUSE" : countdownValue, 200, 220);
+                ctx.fillStyle = "rgba(4,6,10,0.72)"; ctx.fillRect(0,0,400,400);
+                ctx.textAlign = "center"; ctx.textBaseline = "middle";
+                const col = getThemeBaseColor(th);
+                ctx.save();
+                ctx.shadowColor = col; ctx.shadowBlur = 24;
+                ctx.fillStyle = col;
+                ctx.font = isPaused ? "700 40px Orbitron, sans-serif" : "900 90px Orbitron, sans-serif";
+                ctx.fillText(isPaused ? "PAUSE" : countdownValue, 200, 200);
+                ctx.restore();
+                if (isPaused) {
+                    ctx.fillStyle = "rgba(255,255,255,.6)";
+                    ctx.font = "500 13px Orbitron, sans-serif";
+                    ctx.fillText("ESPACE POUR REPRENDRE", 200, 250);
+                }
+                ctx.textBaseline = "alphabetic";
             }
         }
 
@@ -435,7 +549,14 @@
             onValue(query(ref(db, DB_PATH), orderByChild('score'), limitToLast(10)), (s) => {
                 const val = s.val();
                 const list = val ? Object.values(val).sort((a,b) => b.score - a.score) : [];
-                document.getElementById("lBody").innerHTML = list.map(e => `<tr><td>${e.name}</td><td>${e.score}</td></tr>`).join('');
+                const medals = ["🥇", "🥈", "🥉"];
+                document.getElementById("lBody").innerHTML = list.length
+                    ? list.map((e, i) => {
+                        const rank = medals[i] || `<span class="rank">${i + 1}</span>`;
+                        const me = e.name.toLowerCase() === user.toLowerCase() ? ' class="me"' : '';
+                        return `<tr${me}><td>${rank} ${escapeHtml(e.name)}</td><td>${e.score}</td></tr>`;
+                    }).join('')
+                    : `<tr><td colspan="2" class="lb-empty">Aucun score pour l'instant</td></tr>`;
             });
         };
 
