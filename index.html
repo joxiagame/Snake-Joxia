@@ -265,69 +265,47 @@
             ctx.save();
             ctx.lineJoin = "round";
             ctx.lineCap = "round";
+            ctx.shadowBlur = 0;                 // rendu plat, sans néon (style Google Snake)
 
-            // --- Corps continu : segments reliés, dégradé tête->queue, queue effilée ---
-            for (let i = n - 1; i > 0; i--) {
-                const t = i / n;                 // ~1 vers la queue, ~0 vers la tête
-                const a = center(snake[i]);
-                const b = center(snake[i - 1]);
-                if (theme === 'brainrot') {
+            // --- Corps plein, largeur uniforme, coins arrondis ---
+            const width = box * 0.9;
+            if (theme === 'brainrot') {
+                // le thème "brainrot" garde son arc-en-ciel fun
+                for (let i = n - 1; i > 0; i--) {
+                    const a = center(snake[i]), b = center(snake[i - 1]);
                     ctx.strokeStyle = `hsl(${(i * 32) % 360}, 85%, 60%)`;
-                    ctx.shadowColor = ctx.strokeStyle;
-                    ctx.globalAlpha = 1;
-                } else {
-                    ctx.strokeStyle = baseColor;
-                    ctx.shadowColor = baseColor;
-                    ctx.globalAlpha = 1 - t * 0.5;      // fondu vers la queue
+                    ctx.lineWidth = width;
+                    ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
                 }
-                ctx.shadowBlur = 12;
-                ctx.lineWidth = box * (0.84 - t * 0.4); // amincissement vers la queue
-                ctx.beginPath();
-                ctx.moveTo(a.x, a.y);
-                ctx.lineTo(b.x, b.y);
-                ctx.stroke();
+                if (n === 1) { const c = center(snake[0]); ctx.fillStyle = `hsl(0,85%,60%)`; ctx.beginPath(); ctx.arc(c.x, c.y, width / 2, 0, Math.PI * 2); ctx.fill(); }
+            } else {
+                // corps continu d'une seule couleur plate
+                ctx.strokeStyle = baseColor;
+                ctx.lineWidth = width;
+                if (n > 1) {
+                    ctx.beginPath();
+                    ctx.moveTo(center(snake[0]).x, center(snake[0]).y);
+                    for (let i = 1; i < n; i++) ctx.lineTo(center(snake[i]).x, center(snake[i]).y);
+                    ctx.stroke();
+                } else {
+                    const c = center(snake[0]);
+                    ctx.fillStyle = baseColor;
+                    ctx.beginPath(); ctx.arc(c.x, c.y, width / 2, 0, Math.PI * 2); ctx.fill();
+                }
             }
-            ctx.globalAlpha = 1;
 
-            // --- Tête ---
+            // --- Tête : petits yeux mignons façon Google Snake ---
             const h = center(snake[0]);
-            const headColor = (theme === 'brainrot') ? `hsl(0, 85%, 60%)` : baseColor;
-            ctx.shadowBlur = 18;
-            ctx.shadowColor = headColor;
-            ctx.fillStyle = headColor;
-            ctx.beginPath();
-            ctx.arc(h.x, h.y, box * 0.46, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.shadowBlur = 0;
-
-            // vecteur de direction (et perpendiculaire)
             const dv = { LEFT: [-1, 0], RIGHT: [1, 0], UP: [0, -1], DOWN: [0, 1] }[d] || [1, 0];
             const pv = [-dv[1], dv[0]];
-
-            // langue fourchue animée (sort par l'avant, par intermittence)
-            if (Math.sin(performance.now() / 150) > 0.3) {
-                const bx = h.x + dv[0] * box * 0.46, by = h.y + dv[1] * box * 0.46;
-                const tx = bx + dv[0] * 7, ty = by + dv[1] * 7;
-                ctx.strokeStyle = "#ff3b6b";
-                ctx.lineWidth = 1.6;
-                ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(tx, ty); ctx.stroke();
-                ctx.beginPath();
-                ctx.moveTo(tx, ty); ctx.lineTo(tx + dv[0] * 3 + pv[0] * 2.5, ty + dv[1] * 3 + pv[1] * 2.5);
-                ctx.moveTo(tx, ty); ctx.lineTo(tx + dv[0] * 3 - pv[0] * 2.5, ty + dv[1] * 3 - pv[1] * 2.5);
-                ctx.stroke();
-            }
-
-            // yeux (bien placés de chaque côté, regard vers l'avant)
-            const eyeFwd = 3, eyeSide = 4.5, eyeR = 3.2;
+            const eyeFwd = 2.5, eyeSide = 4.3, eyeR = 3.4, pupR = 1.8;
             [1, -1].forEach(sgn => {
                 const ex = h.x + dv[0] * eyeFwd + pv[0] * eyeSide * sgn;
                 const ey = h.y + dv[1] * eyeFwd + pv[1] * eyeSide * sgn;
                 ctx.fillStyle = "#fff";
                 ctx.beginPath(); ctx.arc(ex, ey, eyeR, 0, Math.PI * 2); ctx.fill();
-                ctx.fillStyle = "#0a0a0a";
-                ctx.beginPath(); ctx.arc(ex + dv[0] * 1.2, ey + dv[1] * 1.2, 1.5, 0, Math.PI * 2); ctx.fill();
-                ctx.fillStyle = "rgba(255,255,255,.9)";
-                ctx.beginPath(); ctx.arc(ex - 0.8, ey - 0.8, 0.7, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = "#1a1a1a";
+                ctx.beginPath(); ctx.arc(ex + dv[0] * 1.1, ey + dv[1] * 1.1, pupR, 0, Math.PI * 2); ctx.fill();
             });
 
             ctx.restore();
