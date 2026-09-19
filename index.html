@@ -525,6 +525,8 @@
             ));
         }
         document.getElementById("touchToggle").onclick = toggleTouch;
+        // Auto-activer le D-pad tactile sur un appareil tactile (mobile/tablette)
+        if (window.matchMedia && window.matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window) { toggleTouch(); }
 
         function setDir(newD) {
             if(isPaused || isCountingDown || !canChangeDir) return;
